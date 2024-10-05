@@ -1,0 +1,223 @@
+SQL (Structured Query Language) is the standard language for querying and manipulating databases. Below is a comprehensive list of the essential SQL syntaxes and commands.
+
+1. Database Commands
+Create a Database:
+ 
+CREATE DATABASE database_name;
+
+Drop a Database:
+ 
+DROP DATABASE database_name;
+
+Use a Database:
+ 
+USE database_name;
+
+2. Table Commands
+
+Create a Table:
+ 
+CREATE TABLE table_name (  column1 datatype CONSTRAINT,  column2 datatype CONSTRAINT,  column3 datatype CONSTRAINT
+);
+
+Drop a Table:
+ 
+DROP TABLE table_name;
+
+Alter a Table (Add/Modify/Delete Columns):
+
+Add a Column: 
+
+ALTER TABLE table_name ADD column_name datatype;
+
+Modify a Column: 
+
+ALTER TABLE table_name MODIFY COLUMN column_name datatype;
+
+Drop a Column: 
+
+ALTER TABLE table_name DROP COLUMN column_name;
+
+3. Inserting Data
+
+Insert Single Record:
+
+INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2, value3);
+
+Insert Multiple Records:
+
+INSERT INTO table_name (column1, column2, column3) VALUES (value1, value2, value3),       (value4, value5, value6);
+
+4. Select Queries (Retrieve Data)
+
+Basic SELECT:
+ 
+SELECT column1, column2FROM table_name;
+
+SELECT All Columns:
+ 
+SELECT * FROM table_name;
+
+SELECT with WHERE Clause:
+ 
+SELECT column1, column2 FROM table_name WHERE condition;
+
+SELECT with AND/OR/NOT:
+ 
+SELECT column1, column2 FROM table_name WHERE condition1 AND condition2;
+
+SELECT column1, column2 FROM table_name WHERE condition1 OR condition2;
+
+SELECT column1, column2 FROM table_name WHERE NOT condition;
+
+SELECT with ORDER BY (Sort):
+ 
+SELECT column1, column2 FROM table_name
+ORDER BY column_name ASC;  -- Ascending order
+ORDER BY column_name DESC; -- Descending order
+
+SELECT with DISTINCT (Unique Values):
+ 
+SELECT DISTINCT column1 FROM table_name;
+
+SELECT with LIMIT (Top N Rows):
+ 
+SELECT column1, column2 FROM table_name LIMIT number_of_rows;
+
+5. Conditions in Queries
+
+Comparison Operators:
+ 
+=, >, <, >=, <=, <>
+BETWEEN Clause:
+ 
+SELECT column1, column2 FROM table_name WHERE column_name BETWEEN value1 AND value2;
+
+IN Clause (Multiple Values):
+ 
+SELECT column1, column2 FROM table_name WHERE column_name IN (value1, value2, value3);
+
+LIKE Clause (Pattern Matching):
+ 
+SELECT column1, column2 FROM table_name WHERE column_name LIKE pattern;
+
+%: Represents zero, one, or multiple characters.
+_: Represents a single character.
+Example:
+ 
+SELECT * FROM Customers WHERE name LIKE 'A%';  -- Starts with 'A'
+
+IS NULL / IS NOT NULL:
+ 
+SELECT column1, column2 FROM table_name WHERE column_name IS NULL;
+
+SELECT column1, column2 FROM table_name WHERE column_name IS NOT NULL;
+
+6. Update Data
+
+Update Records: 
+
+UPDATE table_name SET column1 = value1, column2 = value2 WHERE condition;
+
+7. Delete Data
+
+Delete Records:
+ 
+DELETE FROM table_name WHERE condition;
+
+Delete All Records (Without Removing Table):
+ 
+DELETE FROM table_name;
+
+8. Joins (Combine Data from Multiple Tables)
+
+INNER JOIN:
+ 
+SELECT columns FROM table1 INNER JOIN table2 ON table1.common_column = table2.common_column;
+
+LEFT JOIN (or LEFT OUTER JOIN):
+ 
+SELECT columns FROM table1 LEFT JOIN table2 ON table1.common_column = table2.common_column; 
+
+RIGHT JOIN (or RIGHT OUTER JOIN):
+ 
+SELECT columns FROM table1 RIGHT JOIN table2 ON table1.common_column = table2.common_column; 
+
+FULL JOIN (or FULL OUTER JOIN):
+ 
+SELECT columns FROM table1 FULL OUTER JOIN table2 ON table1.common_column = table2.common_column;
+
+9. Aggregate Functions
+COUNT():
+SELECT COUNT(column_name) FROM table_name 
+ 
+SUM():
+ 
+SELECT SUM(column_name) FROM table_name;
+
+AVG():
+ 
+SELECT AVG(column_name) FROM table_name;
+
+MAX():
+ 
+SELECT MAX(column_name) FROM table_name;
+
+MIN():
+ 
+SELECT MIN(column_name) FROM table_name;
+
+10. Group By & Having
+GROUP BY:
+ 
+SELECT column1, COUNT(*) FROM table_name GROUP BY column1; 
+
+HAVING (Filter after Group By):
+ 
+SELECT column1, COUNT(*) FROM table_name GROUP BY column1 HAVING COUNT(*) > 1;
+
+11. Set Operations
+
+UNION (Combine Results from Two Queries):
+ 
+SELECT column1, column2 FROM table1 UNION SELECT column1, column2 FROM table2;
+
+UNION ALL (Allow Duplicates):
+ 
+SELECT column1, column2 FROM table1 UNION ALL SELECT column1, column2 FROM table2;
+
+INTERSECT (Common Results Between Queries):
+ 
+SELECT column1, column2 FROM table1 INTERSECT SELECT column1, column2 FROM table2;
+
+EXCEPT (Difference of Results):
+ 
+SELECT column1, column2 FROM table1 EXCEPT SELECT column1, column2 FROM table2;
+
+12. Indexes
+
+Create Index:
+ 
+CREATE INDEX index_name ON table_name (column_name);
+
+Drop Index:
+ 
+DROP INDEX index_name;
+
+13. Constraints
+
+Primary Key:
+ 
+CREATE TABLE table_name (column1 datatype PRIMARY KEY,  column2 datatype);
+Foreign Key:
+ 
+CREATE TABLE table_name (column1 datatype,  column2 datatype,  FOREIGN KEY (column1) REFERENCES other_table(column));
+Unique Constraint:
+ 
+CREATE TABLE table_name (column1 datatype UNIQUE);
+Check Constraint:
+ 
+CREATE TABLE table_name (column1 datatype CHECK (condition));
+Not Null:
+ 
+CREATE TABLE table_name (column1 datatype NOT NULL);
