@@ -1,0 +1,223 @@
+
+# Famous MySQL Interview Questions and Answers
+
+## 1. What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?
+- **`DELETE`**: Removes rows from a table based on a `WHERE` condition. It can be rolled back and triggers are activated.
+  ```sql
+  DELETE FROM employees WHERE employee_id = 1001;
+  ```
+  
+- **`TRUNCATE`**: Removes all rows from a table but retains the structure. It is faster than `DELETE` because it doesn’t log individual row deletions.
+  ```sql
+  TRUNCATE TABLE employees;
+  ```
+
+- **`DROP`**: Deletes the entire table (data + structure) from the database.
+  ```sql
+  DROP TABLE employees;
+  ```
+
+---
+
+## 2. How do you optimize a slow-running query?
+- **Use Indexes**: Ensure columns used in `WHERE`, `JOIN`, and `ORDER BY` clauses have indexes.
+  ```sql
+  CREATE INDEX idx_column ON employees(column_name);
+  ```
+- **Use `EXPLAIN`**: Analyze the query execution plan.
+  ```sql
+  EXPLAIN SELECT * FROM employees WHERE salary > 5000;
+  ```
+- **Avoid `SELECT *`**: Retrieve only the required columns.
+  ```sql
+  SELECT name, salary FROM employees WHERE salary > 5000;
+  ```
+- **Use pagination**: If working with large data sets, retrieve limited rows using `LIMIT`.
+  ```sql
+  SELECT * FROM employees LIMIT 10 OFFSET 10;
+  ```
+
+---
+
+## 3. What is the difference between `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, and `FULL JOIN`?
+- **`INNER JOIN`**: Returns rows that have matching values in both tables.
+  ```sql
+  SELECT * FROM employees e INNER JOIN departments d ON e.department_id = d.department_id;
+  ```
+
+- **`LEFT JOIN`**: Returns all rows from the left table and matched rows from the right table. Unmatched rows from the right are `NULL`.
+  ```sql
+  SELECT * FROM employees e LEFT JOIN departments d ON e.department_id = d.department_id;
+  ```
+
+- **`RIGHT JOIN`**: Returns all rows from the right table and matched rows from the left table.
+  ```sql
+  SELECT * FROM employees e RIGHT JOIN departments d ON e.department_id = d.department_id;
+  ```
+
+- **`FULL JOIN`**: Returns all records when there is a match in either left or right table. MySQL doesn’t support `FULL JOIN` directly but it can be simulated using a `UNION`.
+  ```sql
+  SELECT * FROM employees e LEFT JOIN departments d ON e.department_id = d.department_id
+  UNION
+  SELECT * FROM employees e RIGHT JOIN departments d ON e.department_id = d.department_id;
+  ```
+
+---
+
+## 4. How do you find duplicate records in a table?
+- Use `GROUP BY` and `HAVING` to find duplicate values based on a column, such as `email`.
+  ```sql
+  SELECT email, COUNT(*) AS occurrences
+  FROM users
+  GROUP BY email
+  HAVING COUNT(*) > 1;
+  ```
+
+---
+
+## 5. What is the difference between `UNION` and `UNION ALL`?
+- **`UNION`**: Combines the result sets of two `SELECT` statements and removes duplicates.
+  ```sql
+  SELECT name FROM employees_2023
+  UNION
+  SELECT name FROM employees_2024;
+  ```
+
+- **`UNION ALL`**: Combines the result sets of two `SELECT` statements without removing duplicates.
+  ```sql
+  SELECT name FROM employees_2023
+  UNION ALL
+  SELECT name FROM employees_2024;
+  ```
+
+---
+
+## 6. What is a foreign key, and why is it used?
+- A **foreign key** is a column or set of columns in one table that refers to the primary key of another table. It ensures referential integrity.
+  ```sql
+  ALTER TABLE employees 
+  ADD CONSTRAINT fk_department 
+  FOREIGN KEY (department_id) REFERENCES departments(department_id);
+  ```
+
+---
+
+## 7. How do transactions work in MySQL?
+- A **transaction** is a set of SQL statements that are executed as a single unit. If any statement fails, the transaction can be rolled back. MySQL transactions adhere to ACID properties.
+  ```sql
+  START TRANSACTION;
+
+  UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;  -- Debit
+  UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;  -- Credit
+
+  COMMIT;  -- Commits the transaction
+
+  -- If something fails, use ROLLBACK to revert changes:
+  ROLLBACK;
+  ```
+
+---
+
+## 8. What are indexes and how do they improve query performance?
+- An **index** improves the speed of data retrieval operations by creating an ordered representation of data based on specified columns.
+  ```sql
+  CREATE INDEX idx_employee_name ON employees(name);
+  ```
+
+  **Caveats**:
+  - Indexes speed up reads but slow down writes (due to maintenance of the index).
+  - Too many indexes can degrade performance.
+
+---
+
+## 9. What is the difference between InnoDB and MyISAM?
+- **InnoDB**:
+  - Supports **transactions**.
+  - Provides **row-level locking**.
+  - Supports **foreign keys**.
+  - Ensures **ACID compliance**.
+
+- **MyISAM**:
+  - Does not support transactions or foreign keys.
+  - Uses **table-level locking**.
+  - Faster for read-heavy operations but less safe for write-heavy applications.
+
+---
+
+## 10. How do you delete duplicate records from a table?
+- Use the `ROW_NUMBER()` function (MySQL 8.0+) to identify duplicate rows and delete those that have a higher row number.
+  ```sql
+  WITH RankedEmployees AS (
+    SELECT employee_id, 
+           ROW_NUMBER() OVER (PARTITION BY email ORDER BY employee_id) AS row_num
+    FROM employees
+  )
+  DELETE FROM employees
+  WHERE employee_id IN (SELECT employee_id FROM RankedEmployees WHERE row_num > 1);
+  ```
+
+- For older versions, use a self-join method:
+  ```sql
+  DELETE e1
+  FROM employees e1
+  JOIN employees e2 
+  ON e1.email = e2.email 
+  AND e1.employee_id > e2.employee_id;
+  ```
+
+---
+
+## 11. How do you implement pagination in MySQL?
+- Use the `LIMIT` and `OFFSET` clauses to retrieve a subset of results for paginated queries.
+  ```sql
+  SELECT * FROM employees LIMIT 10 OFFSET 0;  -- First page
+  SELECT * FROM employees LIMIT 10 OFFSET 10; -- Second page
+  ```
+
+---
+
+## 12. What is a view in MySQL?
+- A **view** is a virtual table based on the result of a `SELECT` query. It helps simplify complex queries and improve security by restricting access to certain data.
+  ```sql
+  CREATE VIEW high_salary_employees AS 
+  SELECT name, salary 
+  FROM employees 
+  WHERE salary > 50000;
+  ```
+
+  **Usage**:
+  ```sql
+  SELECT * FROM high_salary_employees;
+  ```
+
+---
+
+## 13. What are the different types of storage engines in MySQL?
+- **InnoDB**: Supports transactions, foreign keys, and row-level locking. It's the default engine.
+- **MyISAM**: Older engine, no transaction or foreign key support. Uses table-level locking.
+- **Memory**: Stores data in memory, suitable for temporary tables.
+- **CSV**: Stores data in comma-separated value format, useful for exporting/importing CSV files.
+
+---
+
+## 14. How do you handle NULL values in MySQL?
+- Use `IS NULL` or `IS NOT NULL` to check for `NULL` values.
+  ```sql
+  SELECT * FROM employees WHERE department_id IS NULL;
+  ```
+  
+  **To replace `NULL` values**, use `IFNULL()` or `COALESCE()`:
+  ```sql
+  SELECT IFNULL(salary, 0) FROM employees;
+  ```
+
+---
+
+## 15. How do you enforce uniqueness in a table column?
+- Use a **UNIQUE** constraint on the column to enforce unique values.
+  ```sql
+  ALTER TABLE employees ADD CONSTRAINT unique_email UNIQUE (email);
+  ```
+
+---
+
