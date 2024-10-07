@@ -1,0 +1,46 @@
+To delete duplicate records from a table in MySQL, there are several approaches you can take depending on how you define duplicates (e.g., duplicate rows based on one column or all columns). Below, I'll outline a general strategy using a temporary table and ROW_NUMBER() with the MySQL 8+ version.
+
+Scenario: Delete Duplicate Records Keeping One
+Suppose you have a table employees with duplicate rows based on the email column, and you want to keep the first occurrence of each record.
+
+Here’s the step-by-step approach:
+
+Steps:
+Use ROW_NUMBER() to identify duplicates: In MySQL 8.0+, you can use the ROW_NUMBER() function to assign a unique sequential number to rows that share the same value in the column you want to deduplicate.
+
+Delete the rows that are duplicates: Delete all rows where the ROW_NUMBER() is greater than 1 (i.e., all duplicates except the first occurrence).
+
+Example Query
+sql
+Copy code
+WITH RankedEmployees AS (
+  SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY email ORDER BY employee_id) AS row_num
+  FROM employees
+)
+DELETE FROM employees
+WHERE employee_id IN (
+  SELECT employee_id
+  FROM RankedEmployees
+  WHERE row_num > 1
+);
+Explanation:
+ROW_NUMBER() is used to assign a unique row number for each email partition. It orders the records by employee_id, but you can change the ORDER BY to suit your needs.
+The WITH clause (Common Table Expression) creates a temporary table RankedEmployees where duplicates are numbered.
+The DELETE statement removes all rows where row_num > 1, ensuring that only the first occurrence of each email is kept.
+Deleting Duplicates in Older Versions of MySQL (Pre-8.0)
+For MySQL versions prior to 8.0, where window functions like ROW_NUMBER() are not available, you can use a different method with a self-join or create a temporary table:
+
+sql
+Copy code
+DELETE e1
+FROM employees e1
+JOIN employees e2 
+ON e1.email = e2.email 
+AND e1.employee_id > e2.employee_id;
+Explanation:
+This query joins the employees table to itself (e1 and e2 are table aliases).
+It compares rows based on the email column, and deletes the row (e1) with a higher employee_id for each duplicate email found.
+Key Considerations:
+Backup: Before deleting records, always backup your data or test the deletion with a SELECT query to review the results.
+Primary Key/Unique Column: Make sure the table has a primary key or a unique column (employee_id in this example) to help distinguish between duplicate records.
