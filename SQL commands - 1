@@ -1,0 +1,181 @@
+
+# MySQL Commands from A to Z
+
+## 1. ALTER
+- **Description**: The `ALTER` command is used to modify an existing database object, such as a table.
+- **Syntax**: 
+    ```sql
+    ALTER TABLE table_name ADD column_name datatype;
+    ALTER TABLE table_name DROP COLUMN column_name;
+    ```
+- **Example**:
+    ```sql
+    ALTER TABLE employees ADD department_id INT;
+    ALTER TABLE employees DROP COLUMN department_id;
+    ```
+
+## 2. ANALYZE
+- **Description**: The `ANALYZE` command examines key distributions for a table and stores the results in the optimizer.
+- **Syntax**: 
+    ```sql
+    ANALYZE TABLE table_name;
+    ```
+- **Example**:
+    ```sql
+    ANALYZE TABLE employees;
+    ```
+
+## 3. BACKUP
+- **Description**: MySQL doesn't have a direct `BACKUP` statement. Instead, we use `mysqldump` or related utilities to backup databases.
+- **Example**:
+    ```bash
+    mysqldump -u username -p database_name > backup.sql
+    ```
+
+## 4. CALL
+- **Description**: The `CALL` command is used to execute a stored procedure.
+- **Syntax**: 
+    ```sql
+    CALL stored_procedure_name(parameters);
+    ```
+- **Example**:
+    ```sql
+    CALL getEmployeeDetails(1001);
+    ```
+
+## 5. CASE
+- **Description**: `CASE` is used to create conditional queries.
+- **Syntax**: 
+    ```sql
+    SELECT CASE 
+           WHEN condition THEN result
+           ELSE result
+           END AS alias_name
+    FROM table_name;
+    ```
+- **Example**:
+    ```sql
+    SELECT employee_id,
+           CASE 
+               WHEN salary > 5000 THEN 'High'
+               ELSE 'Low'
+           END AS salary_grade
+    FROM employees;
+    ```
+
+## 6. CREATE
+- **Description**: The `CREATE` command is used to create new objects such as databases, tables, or views.
+- **Syntax**:
+    ```sql
+    CREATE DATABASE database_name;
+    CREATE TABLE table_name (column1 datatype, column2 datatype);
+    ```
+- **Example**:
+    ```sql
+    CREATE DATABASE company;
+    CREATE TABLE employees (employee_id INT, name VARCHAR(100), salary DECIMAL(10, 2));
+    ```
+
+## 7. DELETE
+- **Description**: The `DELETE` command is used to remove records from a table.
+- **Syntax**:
+    ```sql
+    DELETE FROM table_name WHERE condition;
+    ```
+- **Example**:
+    ```sql
+    DELETE FROM employees WHERE employee_id = 1001;
+    ```
+
+## 8. DROP
+- **Description**: The `DROP` command is used to delete objects like databases, tables, or views.
+- **Syntax**:
+    ```sql
+    DROP TABLE table_name;
+    DROP DATABASE database_name;
+    ```
+- **Example**:
+    ```sql
+    DROP TABLE employees;
+    DROP DATABASE company;
+    ```
+
+## 9. EXPLAIN
+- **Description**: `EXPLAIN` shows the execution plan of a query, helping to optimize complex SQL statements.
+- **Syntax**:
+    ```sql
+    EXPLAIN SELECT * FROM table_name;
+    ```
+- **Example**:
+    ```sql
+    EXPLAIN SELECT * FROM employees WHERE salary > 5000;
+    ```
+
+## 10. GRANT
+- **Description**: The `GRANT` command is used to give users privileges on databases or tables.
+- **Syntax**:
+    ```sql
+    GRANT privilege_name ON object TO user;
+    ```
+- **Example**:
+    ```sql
+    GRANT SELECT, INSERT ON employees TO 'username'@'localhost';
+    ```
+
+## 11. INSERT
+- **Description**: The `INSERT` command is used to insert data into a table.
+- **Syntax**:
+    ```sql
+    INSERT INTO table_name (column1, column2) VALUES (value1, value2);
+    ```
+- **Example**:
+    ```sql
+    INSERT INTO employees (employee_id, name, salary) VALUES (1001, 'John Doe', 5000);
+    ```
+
+## 12. JOIN
+- **Description**: `JOIN` is used to retrieve data from multiple tables based on a related column.
+- **Types**:
+    - **INNER JOIN**: Returns records that have matching values in both tables.
+    - **LEFT JOIN**: Returns all records from the left table, and the matched records from the right table.
+    - **RIGHT JOIN**: Returns all records from the right table, and the matched records from the left table.
+    - **FULL JOIN**: Returns all records when there is a match in either left or right table.
+- **Example**:
+    ```sql
+    SELECT employees.name, departments.department_name 
+    FROM employees 
+    INNER JOIN departments ON employees.department_id = departments.department_id;
+    ```
+
+## 13. REVOKE
+- **Description**: The `REVOKE` command removes user privileges.
+- **Syntax**:
+    ```sql
+    REVOKE privilege_name ON object FROM user;
+    ```
+- **Example**:
+    ```sql
+    REVOKE SELECT ON employees FROM 'username'@'localhost';
+    ```
+
+## 14. SELECT
+- **Description**: The `SELECT` command is used to retrieve data from a database.
+- **Syntax**:
+    ```sql
+    SELECT column1, column2 FROM table_name WHERE condition;
+    ```
+- **Example**:
+    ```sql
+    SELECT name, salary FROM employees WHERE salary > 5000;
+    ```
+
+## 15. UPDATE
+- **Description**: The `UPDATE` command is used to modify data in a table.
+- **Syntax**:
+    ```sql
+    UPDATE table_name SET column1 = value1 WHERE condition;
+    ```
+- **Example**:
+    ```sql
+    UPDATE employees SET salary = 5500 WHERE employee_id = 1001;
+    ```
