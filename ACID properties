@@ -1,17 +1,27 @@
-The ACID properties are a set of principles that guarantee reliable transactions in a database system. ACID stands for Atomicity, Consistency, Isolation, and Durability, and these properties apply to various data management systems like SQL databases, Hive, and PySpark. Here's how they are interpreted and handled in these systems:
+The ACID properties are a set of principles that guarantee reliable transactions in a database system. 
+ACID stands for Atomicity, Consistency, Isolation, and Durability, and these properties apply to various data management systems like SQL databases, Hive, and PySpark.
+Here's how they are interpreted and handled in these systems:
 
-1. ACID in SQL (Traditional Relational Databases)
+ACID in SQL (Traditional Relational Databases)
 Relational databases like MySQL, PostgreSQL, SQL Server, and Oracle natively support ACID properties to ensure transactional reliability.
 
 Atomicity:
-Definition: A transaction is atomic if all its operations are completed successfully or none of them are. If one part of the transaction fails, the entire transaction fails, and the database is left unchanged.
-SQL: SQL databases ensure atomicity using transaction controls like BEGIN TRANSACTION, COMMIT, and ROLLBACK. If an error occurs during a transaction, the system can roll back to the initial state.
+Definition: A transaction is atomic if all its operations are completed successfully or none of them are. 
+If one part of the transaction fails, the entire transaction fails, and the database is left unchanged.
+SQL: SQL databases ensure atomicity using transaction controls like BEGIN TRANSACTION, COMMIT, and ROLLBACK. 
+If an error occurs during a transaction, the system can roll back to the initial state.
+
+
 Consistency:
 Definition: A transaction must move the database from one valid state to another, maintaining all predefined rules (constraints, triggers, etc.).
 SQL: SQL databases enforce data integrity through constraints (like PRIMARY KEY, FOREIGN KEY, UNIQUE, etc.), so any transaction that violates these rules is rejected.
+
+
 Isolation:
 Definition: Each transaction is isolated from others, meaning the changes made by a transaction are not visible to other transactions until the transaction is complete.
 SQL: SQL databases support different isolation levels (e.g., READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE) that define how transaction concurrency is handled.
+
+
 Durability:
 Definition: Once a transaction is committed, its changes are permanent, even in the event of a system failure.
 SQL: SQL databases use mechanisms like write-ahead logs (WAL) to ensure that committed transactions are stored in persistent storage.
