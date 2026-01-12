@@ -1,12 +1,3 @@
-
-# Regex Interview Practice — 50 Question Quiz
-
-> **How to use:** Click **Answer** under each question to reveal/hide the solution. Works on GitHub using HTML `<details>` tags.
->
-> **Flavor assumed:** PCRE/JavaScript-style (`\d`, `\w`, `^`, `$`, groups, lookarounds). Adjust for your engine as needed.
-
----
-
 ## A. Basics & Character Classes (1–10)
 
 **1. Match the word “cat” as a whole word (not part of “concatenate”).**
