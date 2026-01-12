@@ -1,9 +1,3 @@
-# Regex Interview Mega Quiz — 1,000 Questions
-
-> Click **Answer & Explanation** under each question to reveal/hide.
-
----
-
 ## A. Basics & Character Classes
 
 **1. Match the word 'cat' as a whole word.**
