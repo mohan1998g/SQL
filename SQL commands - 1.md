@@ -1,4 +1,3 @@
-
 # MySQL Commands from A to Z
 
 ## 1. ALTER

@@ -1,4 +1,3 @@
-
 # Famous MySQL Interview Questions and Answers
 
 ## 1. What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?
