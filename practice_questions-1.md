@@ -1,5 +1,3 @@
-Here is your requested content formatted as a **Markdown (.md) file** 👇
-
 ***
 
 ````markdown
