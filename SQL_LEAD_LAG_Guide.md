@@ -4,8 +4,8 @@
 
 `LEAD()` and `LAG()` are SQL window functions that allow you to access data from another row without using a self-join.
 
-- `LAG()` looks at a previous row.
-- `LEAD()` looks at a subsequent (next) row.
+- `LAG()` looks at a previous row. - the values comes down
+- `LEAD()` looks at a subsequent (next) row. - the values goes up
 
 These functions are commonly used for:
 - Trend analysis
