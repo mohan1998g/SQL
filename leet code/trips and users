@@ -1,0 +1,138 @@
+The cancellation rate is computed by dividing the number of canceled (by client or driver) requests with unbanned users by the total number of requests with unbanned users on that day.
+
+Write a solution to find the cancellation rate of requests with unbanned users (both client and driver must not be banned) each day between "2013-10-01" and "2013-10-03" with at least one trip. Round Cancellation Rate to two decimal points.
+
+Return the result table in any order.
+
+The result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Trips table:
++----+-----------+-----------+---------+---------------------+------------+
+| id | client_id | driver_id | city_id | status              | request_at |
++----+-----------+-----------+---------+---------------------+------------+
+| 1  | 1         | 10        | 1       | completed           | 2013-10-01 |
+| 2  | 2         | 11        | 1       | cancelled_by_driver | 2013-10-01 |
+| 3  | 3         | 12        | 6       | completed           | 2013-10-01 |
+| 4  | 4         | 13        | 6       | cancelled_by_client | 2013-10-01 |
+| 5  | 1         | 10        | 1       | completed           | 2013-10-02 |
+| 6  | 2         | 11        | 6       | completed           | 2013-10-02 |
+| 7  | 3         | 12        | 6       | completed           | 2013-10-02 |
+| 8  | 2         | 12        | 12      | completed           | 2013-10-03 |
+| 9  | 3         | 10        | 12      | completed           | 2013-10-03 |
+| 10 | 4         | 13        | 12      | cancelled_by_driver | 2013-10-03 |
++----+-----------+-----------+---------+---------------------+------------+
+Users table:
++----------+--------+--------+
+| users_id | banned | role   |
++----------+--------+--------+
+| 1        | No     | client |
+| 2        | Yes    | client |
+| 3        | No     | client |
+| 4        | No     | client |
+| 10       | No     | driver |
+| 11       | No     | driver |
+| 12       | No     | driver |
+| 13       | No     | driver |
++----------+--------+--------+
+Output: 
++------------+-------------------+
+| Day        | Cancellation Rate |
++------------+-------------------+
+| 2013-10-01 | 0.33              |
+| 2013-10-02 | 0.00              |
+| 2013-10-03 | 0.50              |
++------------+-------------------+
+
+
+SELECT 
+  request_at AS Day, 
+  ROUND(
+    SUM(status != 'completed') / COUNT(*), 
+    2
+  ) AS 'Cancellation Rate' 
+FROM 
+  Trips 
+  LEFT JOIN Users AS Clients ON Trips.client_id = Clients.users_id 
+  LEFT JOIN Users AS Drivers ON Trips.driver_id = Drivers.users_id 
+WHERE 
+  Clients.banned = 'No' 
+  AND Drivers.banned = 'No' 
+  AND request_at BETWEEN '2013-10-01' 
+  AND '2013-10-03' 
+GROUP BY 
+  Day
+
+---------------------------------------------------------------
+
+SELECT 
+  request_at AS Day, 
+  ROUND(
+    SUM(status != 'completed') / COUNT(status), 
+    2
+  ) AS 'Cancellation Rate' 
+FROM 
+  Trips 
+WHERE 
+  request_at BETWEEN '2013-10-01' 
+  AND '2013-10-03' 
+  AND driver_id NOT IN (
+    SELECT 
+      users_id 
+    FROM 
+      Users 
+    WHERE 
+      banned = 'Yes'
+  ) 
+  AND client_id NOT IN (
+    SELECT 
+      users_id 
+    FROM 
+      Users 
+    WHERE 
+      banned = 'Yes'
+  ) 
+GROUP BY 
+  Day
+
+---------------------------------------------------------------------
+
+WITH TripStatus AS (
+  SELECT 
+    Request_at AS Day, 
+    T.status != 'completed' AS cancelled 
+  FROM 
+    Trips T 
+    JOIN Users C ON Client_Id = C.Users_Id 
+    AND C.Banned = 'No' 
+    JOIN Users D ON Driver_Id = D.Users_Id 
+    AND D.Banned = 'No' 
+  WHERE 
+    Request_at BETWEEN '2013-10-01' 
+    AND '2013-10-03'
+) 
+SELECT 
+  Day, 
+  ROUND(
+    SUM(cancelled) / COUNT(cancelled), 
+    2
+  ) AS 'Cancellation Rate' 
+FROM 
+  TripStatus 
+GROUP BY 
+  Day;
+
+-------------------------------------------------
+
+SELECT Request_at AS Day, ROUND(SUM(IF(Status = 'completed', 0, 1))/COUNT(Status), 2) AS 'Cancellation Rate' 
+FROM Trips 
+WHERE Client_Id NOT IN (SELECT Users_Id FROM Users WHERE Banned = 'Yes') 
+    AND Driver_Id NOT IN (SELECT Users_Id FROM Users WHERE Banned = 'Yes')
+    AND Request_at BETWEEN '2013-10-01' AND '2013-10-03'
+GROUP BY Request_at;
+
+---------------------------------------------------
