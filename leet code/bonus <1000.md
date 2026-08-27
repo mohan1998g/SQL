@@ -70,3 +70,7 @@ LEFT JOIN Bonus b
 WHERE bonus < 1000
    OR bonus IS NULL;
 ```
+
+Interview Tip
+
+If you filter a right-table column in the WHERE clause, you may accidentally remove NULL rows and effectively turn a LEFT JOIN into an INNER JOIN.
