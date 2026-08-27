@@ -95,3 +95,12 @@ WHERE
   IN (
     SELECT player_id, MIN(event_date) AS first_login FROM Activity GROUP BY player_id
   )'
+
+--------------------------------------------------
+
+# Write your MySQL query statement below
+with total_player as (select count(distinct player_id) as total_player from Activity),
+first_login as (select player_id, MIN(event_date) as first_login from Activity group by player_id),
+second_login as (select a.player_id, a.event_date from Activity a join first_login f on a.player_id = f.player_id where event_date > first_login and date_add(first_login, interval 1 day)=a.event_date group by a.player_id),
+total_second_login as (select count(*) as total_second_login from second_login)
+select round(total_second_login/(total_player), 2) as fraction from total_player, total_second_login
