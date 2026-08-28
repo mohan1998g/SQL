@@ -1,0 +1,19 @@
+Input: 
+Orders table:
++--------------+-----------------+
+| order_number | customer_number |
++--------------+-----------------+
+| 1            | 1               |
+| 2            | 2               |
+| 3            | 3               |
+| 4            | 3               |
++--------------+-----------------+
+Output: 
++-----------------+
+| customer_number |
++-----------------+
+| 3               |
++-----------------+
+
+# Write your MySQL query statement below
+select customer_number from (select customer_number, count(customer_number) as cnt from orders group by customer_number order by 2 desc limit 1)dfgh;
