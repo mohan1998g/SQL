@@ -1,0 +1,106 @@
+Input: 
+Activity table:
++-----------+-----------+------------+--------------+
+| player_id | device_id | event_date | games_played |
++-----------+-----------+------------+--------------+
+| 1         | 2         | 2016-03-01 | 5            |
+| 1         | 2         | 2016-05-02 | 6            |
+| 2         | 3         | 2017-06-25 | 1            |
+| 3         | 1         | 2016-03-02 | 0            |
+| 3         | 4         | 2018-07-03 | 5            |
++-----------+-----------+------------+--------------+
+
+Write a solution to find the first login date for each player.
+
+Return the result table in any order.
+
+Output: 
++-----------+-------------+
+| player_id | first_login |
++-----------+-------------+
+| 1         | 2016-03-01  |
+| 2         | 2017-06-25  |
+| 3         | 2016-03-02  |
++-----------+-------------+
+
+# Write your MySQL query statement below
+select player_id, first_login from 
+(
+    select player_id, event_date as first_login, row_number() over (partition by player_id order by event_date asc) as rnk from activity
+)sub where rnk=1
+-----------------------------------------------
+SELECT player_id
+	,MIN(event_date) AS first_login
+FROM Activity
+GROUP BY player_id;
+
+Write a solution to report the fraction of players that logged in again on the day after the day they first logged in, rounded to 2 decimal places. In other words, you need to determine the number of players who logged in on the day immediately following their initial login, and divide it by the number of total players.
+
+Output: 
++-----------+
+| fraction  |
++-----------+
+| 0.33      |
++-----------+
+
+SELECT
+  ROUND(
+    COUNT(A1.player_id)
+    / (SELECT COUNT(DISTINCT A3.player_id) FROM Activity A3)
+  , 2) AS fraction
+FROM
+  Activity A1
+WHERE
+  (A1.player_id, DATE_SUB(A1.event_date, INTERVAL 1 DAY)) IN (
+    SELECT
+      A2.player_id,
+      MIN(A2.event_date)
+    FROM
+      Activity A2
+    GROUP BY
+      A2.player_id
+  );
+-------------------------------------------------
+WITH first_logins AS (
+  SELECT
+    A.player_id,
+    MIN(A.event_date) AS first_login
+  FROM
+    Activity A
+  GROUP BY
+    A.player_id
+), consec_logins AS (
+  SELECT
+    COUNT(A.player_id) AS num_logins
+  FROM
+    first_logins F
+    INNER JOIN Activity A ON F.player_id = A.player_id
+    AND F.first_login = DATE_SUB(A.event_date, INTERVAL 1 DAY)
+)
+SELECT
+  ROUND(
+    (SELECT C.num_logins FROM consec_logins C)
+    / (SELECT COUNT(F.player_id) FROM first_logins F)
+  , 2) AS fraction;
+
+-------------------------------------------------
+
+# Write your MySQL query statement below
+'SELECT
+  ROUND(COUNT(DISTINCT player_id) / (SELECT COUNT(DISTINCT player_id) FROM Activity), 2) AS fraction
+FROM
+  Activity
+WHERE
+  (player_id, DATE_SUB(event_date, INTERVAL 1 DAY))
+  IN (
+    SELECT player_id, MIN(event_date) AS first_login FROM Activity GROUP BY player_id
+  )'
+
+--------------------------------------------------
+
+# Write your MySQL query statement below
+with total_player as (select count(distinct player_id) as total_player from Activity),
+first_login as (select player_id, MIN(event_date) as first_login from Activity group by player_id),
+second_login as (select a.player_id, a.event_date from Activity a join first_login f on a.player_id = f.player_id where event_date > first_login and date_add(first_login, interval 1 day)=a.event_date group by a.player_id),
+total_second_login as (select count(*) as total_second_login from second_login)
+select round(total_second_login/(total_player), 2) as fraction from total_player, total_second_login
