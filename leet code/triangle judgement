@@ -1,0 +1,14 @@
+To determine whether three sides can form a triangle, we use the Triangle Inequality Theorem. A triangle is valid only if the sum of any two sides is greater than the third side.
+
+For sides x, y, and z, the following conditions must all be true:
+
+x + y > z
+x + z > y
+y + z > x
+If all conditions are satisfied, return 'Yes'; otherwise, return 'No'.
+
+# Write your MySQL query statement below
+select *, if(x+y>z and y+z>x and x+z>y, "Yes","No") as triangle from triangle
+
+SELECT x, y, z, CASE WHEN x + y > z AND x + z > y AND y + z > x THEN 'Yes'
+        ELSE 'No' END AS triangle FROM Triangle;
