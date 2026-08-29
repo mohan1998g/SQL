@@ -1,0 +1,10 @@
+DELETE 
+    p1
+FROM
+    person as p1
+INNER JOIN
+    person as p2
+ON
+    p1.email=p2.email
+    AND
+    p1.id>p2.id
