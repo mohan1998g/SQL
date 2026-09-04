@@ -18,30 +18,6 @@ Output:
 +------------+--------+-------+
 
 
-+------------+--------+-------++------------+--------+-------+
-
-
-UNNEST function serve to transform data from a “wide” format to a “long” format
-
-1 column: UNNEST(c)
-1: UNNEST(ARRAY[c1, c2, c3])
-
-Code
-SELECT 
-    product_id, 
-    store,
-    price
-FROM (
-  SELECT 
-    product_id, 
-    UNNEST(ARRAY['store1', 'store2', 'store3']) AS store, --unnest columns
-    UNNEST(ARRAY[store1, store2, store3]) AS price --unnest values
-  FROM 
-    Products
-) AS unpivot
-WHERE price IS NOT NULL
-UNNEST(ARRAY['store1', 'store2', 'store3'])
-It can be also like ['Store1', 'Store22', 'Store333'], because it's just a list of names of the further "melted" columns (ARRAY[store1, store2, store3])
 
 +------------+--------+-------++------------+--------+-------+
 
