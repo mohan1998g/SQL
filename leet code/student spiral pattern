@@ -1,0 +1,228 @@
+Write a solution to find students who follow the Study Spiral Pattern - students who consistently study multiple subjects in a rotating cycle.
+
+A Study Spiral Pattern means a student studies at least 3 different subjects in a repeating sequence
+The pattern must repeat for at least 2 complete cycles (minimum 6 study sessions)
+Sessions must be consecutive dates with no gaps longer than 2 days between sessions
+Calculate the cycle length (number of different subjects in the pattern)
+Calculate the total study hours across all sessions in the pattern
+Only include students with cycle length of at least 3 subjects
+Return the result table ordered by cycle length in descending order, then by total study hours in descending order.
+
+The result format is in the following example.
+
+ 
+
+Example:
+
+Input:
+
+students table:
+
++------------+--------------+------------------+
+| student_id | student_name | major            |
++------------+--------------+------------------+
+| 1          | Alice Chen   | Computer Science |
+| 2          | Bob Johnson  | Mathematics      |
+| 3          | Carol Davis  | Physics          |
+| 4          | David Wilson | Chemistry        |
+| 5          | Emma Brown   | Biology          |
++------------+--------------+------------------+
+study_sessions table:
+
++------------+------------+------------+--------------+---------------+
+| session_id | student_id | subject    | session_date | hours_studied |
++------------+------------+------------+--------------+---------------+
+| 1          | 1          | Math       | 2023-10-01   | 2.5           |
+| 2          | 1          | Physics    | 2023-10-02   | 3.0           |
+| 3          | 1          | Chemistry  | 2023-10-03   | 2.0           |
+| 4          | 1          | Math       | 2023-10-04   | 2.5           |
+| 5          | 1          | Physics    | 2023-10-05   | 3.0           |
+| 6          | 1          | Chemistry  | 2023-10-06   | 2.0           |
+| 7          | 2          | Algebra    | 2023-10-01   | 4.0           |
+| 8          | 2          | Calculus   | 2023-10-02   | 3.5           |
+| 9          | 2          | Statistics | 2023-10-03   | 2.5           |
+| 10         | 2          | Geometry   | 2023-10-04   | 3.0           |
+| 11         | 2          | Algebra    | 2023-10-05   | 4.0           |
+| 12         | 2          | Calculus   | 2023-10-06   | 3.5           |
+| 13         | 2          | Statistics | 2023-10-07   | 2.5           |
+| 14         | 2          | Geometry   | 2023-10-08   | 3.0           |
+| 15         | 3          | Biology    | 2023-10-01   | 2.0           |
+| 16         | 3          | Chemistry  | 2023-10-02   | 2.5           |
+| 17         | 3          | Biology    | 2023-10-03   | 2.0           |
+| 18         | 3          | Chemistry  | 2023-10-04   | 2.5           |
+| 19         | 4          | Organic    | 2023-10-01   | 3.0           |
+| 20         | 4          | Physical   | 2023-10-05   | 2.5           |
++------------+------------+------------+--------------+---------------+
+Output:
+
++------------+--------------+------------------+--------------+-------------------+
+| student_id | student_name | major            | cycle_length | total_study_hours |
++------------+--------------+------------------+--------------+-------------------+
+| 2          | Bob Johnson  | Mathematics      | 4            | 26.0              |
+| 1          | Alice Chen   | Computer Science | 3            | 15.0              |
++------------+--------------+------------------+--------------+-------------------+
+Explanation:
+
+Alice Chen (student_id = 1):
+Study sequence: Math → Physics → Chemistry → Math → Physics → Chemistry
+Pattern: 3 subjects (Math, Physics, Chemistry) repeating for 2 complete cycles
+Consecutive dates: Oct 1-6 with no gaps > 2 days
+Cycle length: 3 subjects
+Total hours: 2.5 + 3.0 + 2.0 + 2.5 + 3.0 + 2.0 = 15.0 hours
+Bob Johnson (student_id = 2):
+Study sequence: Algebra → Calculus → Statistics → Geometry → Algebra → Calculus → Statistics → Geometry
+Pattern: 4 subjects (Algebra, Calculus, Statistics, Geometry) repeating for 2 complete cycles
+Consecutive dates: Oct 1-8 with no gaps > 2 days
+Cycle length: 4 subjects
+Total hours: 4.0 + 3.5 + 2.5 + 3.0 + 4.0 + 3.5 + 2.5 + 3.0 = 26.0 hours
+Students not included:
+Carol Davis (student_id = 3): Only 2 subjects (Biology, Chemistry) - doesn't meet minimum 3 subjects requirement
+David Wilson (student_id = 4): Only 2 study sessions with a 4-day gap - doesn't meet consecutive dates requirement
+Emma Brown (student_id = 5): No study sessions recorded
+The result table is ordered by cycle_length in descending order, then by total_study_hours in descending order.
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+WITH process_1 AS (
+	SELECT student_id, COUNT(DISTINCT subject) total_subject, SUM(hours_studied) total_study_hours FROM study_sessions GROUP BY student_id
+), process_2 AS (
+	SELECT student_id, session_date, 
+	LEAD(session_date) OVER(PARTITION BY student_id ORDER BY session_date) - session_date diff_date
+	FROM study_sessions
+)
+SELECT p.student_id, s.student_name, s.major, COUNT(DISTINCT p.subject) cycle_length, MAX(pro.total_study_hours) total_study_hours
+FROM study_sessions p 
+INNER JOIN process_1 pro ON p.student_id = pro.student_id
+INNER JOIN students s ON p.student_id = s.student_id
+INNER JOIN study_sessions p1 ON p.student_id = p1.student_id AND p.subject = p1.subject AND p.session_date < p1.session_date 
+	AND p1.session_date - p.session_date BETWEEN pro.total_subject AND pro.total_subject * 2
+WHERE EXISTS (SELECT 1 FROM process_2 pp WHERE p.student_id = pp.student_id AND p.session_date = pp.session_date AND diff_date < 3)
+GROUP BY p.student_id, s.student_name, s.major
+HAVING COUNT(DISTINCT p.subject) > 2
+ORDER BY cycle_length DESC, total_study_hours DESC
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+Intuition
+The problem is asking us to find students who follow a consistent spiral pattern in how they study: they rotate through a fixed set of subjects in the same order, repeat that cycle at least twice, and never leave a long gap between sessions.
+
+My mental model was: if a student has a cycle of k distinct subjects, then once you sort their sessions by date, the subject at position 1, k+1, 2k+1, ... should always be the same, and similarly for positions 2, k+2, 2k+2, etc. On top of that, the days between consecutive sessions should never exceed 2. That naturally led to using window functions to track ordering, gaps, and repeating subject sequences.
+
+Approach
+Preprocess sessions with window functions (b CTE):
+
+For each row in study_sessions, I:
+Use ROW_NUMBER() OVER (PARTITION BY student_id, subject ORDER BY session_date) as grp_k to help distinguish repetitions of the same subject for a student.
+Use LAG(session_date) OVER (PARTITION BY student_id ORDER BY session_date) and DATEDIFF to compute conse, the gap in days between consecutive sessions for each student.
+This gives me per-session information about both ordering and gaps.
+Filter students who can possibly form a spiral (rule1):
+
+Group by student_id and compute:
+cycle_length = COUNT(DISTINCT subject)
+total_study_hours = SUM(hours_studied)
+In the HAVING clause, enforce:
+MAX(conse) <= 2 → no gap larger than 2 days between consecutive sessions.
+COUNT(session_id) >= 6 → at least 6 total sessions.
+COUNT(DISTINCT subject) >= 3 → at least 3 distinct subjects.
+This step filters out students who don’t even meet the basic problem constraints.
+Capture subject sequences by “cycle position” (rule2):
+
+Group by student_id and grp_k, and use GROUP_CONCAT(subject ORDER BY session_date) to build subs, the ordered sequence of subjects for each position group.
+The idea is: if the spiral pattern truly repeats, then the same subs value should appear multiple times for that student.
+Keep only students whose pattern repeats at least twice:
+
+Join rule1 with students to get student details.
+Use an EXISTS subquery on rule2:
+For the same student_id, group by student_id, subs and require COUNT(*) >= 2, meaning this subject sequence repeats at least twice for that student.
+Finally, select the student info plus cycle_length and total_study_hours, and order by cycle_length DESC, total_study_hours DESC.
+Complexity
+Time complexity:
+(O(n \log n))
+Sorting the sessions by session_date per student for the window functions is the dominant factor. The grouping and aggregation steps are linear after sorting.
+
+Space complexity:
+(O(n))
+All intermediate CTEs (b, rule1, rule2) store information proportional to the number of rows in study_sessions, so space grows linearly with the input size.
+
+Code
+with b as (
+    select *,
+    row_number()over(partition by student_id, subject order by session_date) grp_k,
+    datediff(session_date, lag(session_date)over(partition by student_id order by session_date)) as conse 
+    from study_sessions
+),
+rule1 as (
+    select *, count(distinct subject) cycle_length,
+    sum(hours_studied) total_study_hours from b group by student_id
+    having max(conse) <=2 and count(session_id) >=6 and count(distinct subject) >=3
+),
+rule2 as(
+    select student_id, grp_k, group_concat(subject order by session_date) subs from b group by student_id, grp_k
+)
+select s.*, cycle_length, total_study_hours from rule1 join students s on s.student_id = rule1.student_id
+where exists (select 1 from rule2 where rule1.student_id = student_id group by student_id, subs having count(*) >=2)
+order by cycle_length desc, total_study_hours desc
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+Intuition
+The goal is to identify students who maintain a consistent and structured study pattern —
+students who study multiple subjects regularly without taking long breaks.
+The query filters students who studied at least 3 subjects, studied each subject multiple times,
+and had no long gaps (>= 3 days) between their study sessions.
+
+Approach
+Filter students who studied more than 2 distinct subjects and studied each subject at least twice.
+Filter students who have consecutive study sessions with a maximum gap of less than 3 days.
+Combine both filters to identify students with a "study spiral" pattern —
+meaning a consistent cycle of studying multiple subjects repeatedly.
+Rank the students by number of unique subjects (cycle length) and total study hours.
+Logic
+Filter the students CTE1 (studied 3 or more subjects + studied each subject at least twice)
+
+Filter the students CTE2 (maximum gap should be less than 3 days)
+-> Here LAG() allows you to access data from a previous row for the same student
+
+This helps identify a "spiral" pattern — consistent repetition of study subjects it means :
+-> compute:
+
+• cycle_length → number of distinct subjects studied
+• total_study_hours → total hours spent studying
+
+Complexity
+Time complexity: O(n log n)
+(Because of grouping, window functions, and sorting operations)
+Space complexity: O(n)
+(Due to temporary storage for window and grouping calculations)
+Code
+WITH three_unique_subject_2_times AS (
+    SELECT student_id FROM study_sessions GROUP BY student_id HAVING COUNT(DISTINCT(subject))>2
+    AND student_id 
+    NOT IN (SELECT DISTINCT(student_id) FROM study_sessions GROUP BY student_id,subject HAVING COUNT(*)<2)
+),
+consecutive_dates AS (
+    SELECT student_id
+    FROM (
+        SELECT student_id,subject,
+        DATEDIFF(session_date,LAG(session_date,1) OVER (PARTITION BY student_id ORDER BY session_date)) AS gaps
+        FROM study_sessions
+    ) AS consecutive_dates
+    GROUP BY student_id
+    HAVING MAX(gaps) <3
+),
+study_spiral_pattern AS (
+    SELECT s.student_id,
+    s.student_name,
+    s.major, 
+    COUNT(DISTINCT(ss.subject)) AS cycle_length,
+    SUM(ss.hours_studied) AS total_study_hours,
+    COUNT(s.student_id) OVER() AS unique_students
+    FROM students AS s
+    JOIN study_sessions AS ss
+    ON s.student_id = ss.student_id
+    GROUP BY s.student_id
+    HAVING s.student_id IN (SELECT * FROM three_unique_subject_2_times)
+    AND s.student_id IN (SELECT * FROM consecutive_dates)
+    ORDER BY cycle_length DESC,total_study_hours DESC
+)
+SELECT student_id,student_name,major,cycle_length,total_study_hours
+FROM study_spiral_pattern
+WHERE unique_students>1;
