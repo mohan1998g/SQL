@@ -226,3 +226,139 @@ study_spiral_pattern AS (
 SELECT student_id,student_name,major,cycle_length,total_study_hours
 FROM study_spiral_pattern
 WHERE unique_students>1;
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+Approach to Identify Repeating Study Cycles
+
+1.Order study sessions by student and date
+
+Assign a sequential number to each session per student to track session order.
+2.Calculate gaps between sessions
+
+Compute the day difference between each session and the previous one to detect breaks.
+3.Define continuous study blocks
+
+Split sessions into blocks where gaps between consecutive sessions are no more than 2 days.
+4.Filter blocks with at least 6 sessions
+
+Only consider blocks large enough to potentially have repeating cycles.
+5.Assign session numbers within each block
+
+Number sessions sequentially inside each block to analyze patterns.
+6.Summarize each block
+
+Calculate total sessions, distinct subjects (cycle length), and total hours studied.
+7.Identify repeating subject cycles
+
+The total number of sessions must be a multiple of the cycle length.
+Extract the first cycle-length subjects as the base pattern.
+Confirm the entire block’s subject sequence repeats this base pattern exactly.
+8.Output student info and study cycle details
+
+Show student name, major, cycle length, and total hours studied for blocks with valid repeating cycles.
+9.Sort results by complexity and effort
+
+Order by descending cycle length (more complex patterns first), then total study hours.
+
+
+WITH sessions_ordered AS (
+  SELECT
+    ss.*,
+    ROW_NUMBER() OVER (PARTITION BY student_id ORDER BY session_date) AS session_seq_num
+  FROM study_sessions ss
+),
+sessions_with_gaps AS (
+  SELECT
+    so.*,
+    DATEDIFF(
+      so.session_date,
+      LAG(so.session_date) OVER (PARTITION BY student_id ORDER BY session_date)
+    ) AS gap_days
+  FROM sessions_ordered so
+),
+study_blocks AS (
+  SELECT
+    swg.*,
+    SUM(CASE WHEN gap_days IS NULL OR gap_days > 2 THEN 1 ELSE 0 END)
+      OVER (PARTITION BY student_id ORDER BY session_date) AS block_id
+  FROM sessions_with_gaps swg
+),
+valid_study_blocks AS (
+  SELECT student_id, block_id
+  FROM study_blocks
+  GROUP BY student_id, block_id
+  HAVING COUNT(*) >= 6
+),
+block_sessions AS (
+  SELECT
+    sb.student_id,
+    sb.block_id,
+    sb.subject,
+    sb.session_date,
+    sb.hours_studied,
+    ROW_NUMBER() OVER (PARTITION BY sb.student_id, sb.block_id ORDER BY sb.session_date) AS seq_num_in_block
+  FROM study_blocks sb
+  JOIN valid_study_blocks vsb ON sb.student_id = vsb.student_id AND sb.block_id = vsb.block_id
+),
+block_summary AS (
+  SELECT
+    bs.student_id,
+    bs.block_id,
+    COUNT(*) AS total_sessions,
+    COUNT(DISTINCT bs.subject) AS cycle_length,
+    ROUND(SUM(bs.hours_studied), 1) AS total_hours
+  FROM block_sessions bs
+  GROUP BY bs.student_id, bs.block_id
+  HAVING cycle_length >= 3
+     AND total_sessions % cycle_length = 0
+),
+pattern_analysis AS (
+  SELECT
+    bs.student_id,
+    bs.block_id,
+    bs.subject,
+    bs.seq_num_in_block,
+    (bs.seq_num_in_block - 1) % bsum.cycle_length AS cycle_position,
+    bsum.cycle_length,
+    bsum.total_hours
+  FROM block_sessions bs
+  JOIN block_summary bsum ON bs.student_id = bsum.student_id AND bs.block_id = bsum.block_id
+),
+pattern_grouped AS (
+  SELECT
+    pa.student_id,
+    pa.block_id,
+    pa.cycle_length,
+    pa.total_hours,
+    GROUP_CONCAT(pa.subject ORDER BY pa.seq_num_in_block) AS full_subject_sequence,
+    GROUP_CONCAT(
+      CASE WHEN pa.seq_num_in_block <= pa.cycle_length THEN pa.subject ELSE NULL END
+      ORDER BY pa.seq_num_in_block
+      SEPARATOR ','
+    ) AS cycle_subject_sequence
+  FROM pattern_analysis pa
+  GROUP BY pa.student_id, pa.block_id, pa.cycle_length, pa.total_hours
+),
+pattern_verified AS (
+  SELECT
+    pg.student_id,
+    pg.block_id,
+    pg.cycle_length,
+    pg.total_hours,
+    pg.full_subject_sequence,
+    pg.cycle_subject_sequence,
+    REPEAT(CONCAT(pg.cycle_subject_sequence, ','), 
+           (LENGTH(pg.full_subject_sequence) - LENGTH(REPLACE(pg.full_subject_sequence, ',', '')) + 1) / pg.cycle_length) AS repeated_pattern
+  FROM pattern_grouped pg
+)
+SELECT
+  pv.student_id,
+  s.student_name,
+  s.major,
+  pv.cycle_length,
+  pv.total_hours AS total_study_hours
+FROM pattern_verified pv
+JOIN students s ON pv.student_id = s.student_id
+WHERE pv.repeated_pattern = CONCAT(pv.full_subject_sequence, ',')
+ORDER BY pv.cycle_length DESC, pv.total_hours DESC;
