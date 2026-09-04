@@ -1,0 +1,61 @@
+# Write your MySQL query statement below
+with full_data as ( select  t.trip_id, t.driver_id, d.driver_name, trip_date, distance_km, fuel_consumed from trips t join drivers d on t.driver_id = d.driver_id
+
+),
+first_half_avg as
+(
+    select driver_id, driver_name, avg(distance_km/fuel_consumed) as first_half_avg from full_data where trip_date <= '2023-06-30' group by driver_id, driver_name
+),
+second_half_avg as
+(
+    select driver_id, driver_name, avg(distance_km/fuel_consumed) as second_half_avg from full_data where trip_date > '2023-06-30' group by driver_id, driver_name
+)
+
+select f.driver_id, f.driver_name, round(first_half_avg, 2) as first_half_avg, round(second_half_avg, 2) as second_half_avg, round((second_half_avg - first_half_avg), 2) as efficiency_improvement from first_half_avg f join second_half_avg s on 
+f.driver_id = s.driver_id where second_half_avg - first_half_avg >0 order by 5 desc, 2 asc
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+with cte as (
+    select t.driver_id,d.driver_name,
+    avg(case when month(trip_date) <=6 then t.distance_km/t.fuel_consumed end ) as first,
+    avg(case when month(trip_date) >6 then t.distance_km/t.fuel_consumed  end )as second
+    from drivers as d
+    join trips as t 
+    on d.driver_id=t.driver_id
+    group by d.driver_id
+      
+)select driver_id,driver_name, round(first,2) as first_half_avg,
+round(second,2) as second_half_avg,round(second-first,2) as efficiency_improvement 
+from cte
+where first is not null and second is not null and second>first
+order by efficiency_improvement desc,driver_name asc
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# Write your MySQL query statement below
+with cte as
+(SELECT driver_id, avg(distance_km/fuel_consumed) first_half_avg
+FROM trips
+where extract(month from trip_date) >= 1 and extract(month from trip_date) <= 6
+GROUP BY driver_id
+)
+
+,cte1 as
+(SELECT driver_id, avg(distance_km/fuel_consumed) second_half_avg
+FROM trips
+where extract(month from trip_date) >= 7 and extract(month from trip_date) <= 12
+GROUP BY driver_id
+)
+
+SELECT P.driver_id,d.driver_name, 
+round(p.first_half_avg,2) as first_half_avg, 
+round(q.second_half_avg,2) as second_half_avg, 
+round(q.second_half_avg - p.first_half_avg,2) as efficiency_improvement
+From cte p
+inner join cte1 q
+on p.driver_id = q.driver_id
+inner join drivers d
+on p.driver_id = d.driver_id
+where q.second_half_avg >  p.first_half_avg
+order by efficiency_improvement desc, d.driver_name
