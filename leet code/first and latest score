@@ -334,3 +334,17 @@ WHERE s1.rn_first = 1
   AND s2.rn_last = 1
   AND s2.score > s1.score
 ORDER BY s1.student_id, s1.subject;
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+WITH RankedScores AS (
+    SELECT student_id, subject, score,
+        ROW_NUMBER() OVER (PARTITION BY student_id, subject ORDER BY exam_date ASC) AS rn_asc,
+        ROW_NUMBER() OVER (PARTITION BY student_id, subject ORDER BY exam_date DESC) AS rn_desc,
+        COUNT(1) OVER (PARTITION BY student_id, subject) AS cnt
+    FROM scores)
+SELECT student_id, subject,
+    MAX(CASE WHEN rn_asc = 1 THEN score END) AS first_score,
+    MAX(CASE WHEN rn_desc = 1 THEN score END) AS latest_score
+FROM RankedScores
+WHERE cnt > 1
+GROUP BY student_id, subject
+HAVING MAX(CASE WHEN rn_desc = 1 THEN score END) > MAX(CASE WHEN rn_asc = 1 THEN score END);
