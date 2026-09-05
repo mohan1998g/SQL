@@ -1,0 +1,336 @@
+Write a solution to find the students who have shown improvement. A student is considered to have shown improvement if they meet both of these conditions:
+
+Have taken exams in the same subject on at least two different dates
+Their latest score in that subject is higher than their first score
+Return the result table ordered by student_id, subject in ascending order.
+
+The result format is in the following example.
+
+ 
+
+Example:
+
+Input:
+
+Scores table:
+
++------------+----------+-------+------------+
+| student_id | subject  | score | exam_date  |
++------------+----------+-------+------------+
+| 101        | Math     | 70    | 2023-01-15 |
+| 101        | Math     | 85    | 2023-02-15 |
+| 101        | Physics  | 65    | 2023-01-15 |
+| 101        | Physics  | 60    | 2023-02-15 |
+| 102        | Math     | 80    | 2023-01-15 |
+| 102        | Math     | 85    | 2023-02-15 |
+| 103        | Math     | 90    | 2023-01-15 |
+| 104        | Physics  | 75    | 2023-01-15 |
+| 104        | Physics  | 85    | 2023-02-15 |
++------------+----------+-------+------------+
+Output:
+
++------------+----------+-------------+--------------+
+| student_id | subject  | first_score | latest_score |
++------------+----------+-------------+--------------+
+| 101        | Math     | 70          | 85           |
+| 102        | Math     | 80          | 85           |
+| 104        | Physics  | 75          | 85           |
++------------+----------+-------------+--------------+
+Explanation:
+
+Student 101 in Math: Improved from 70 to 85
+Student 101 in Physics: No improvement (dropped from 65 to 60)
+Student 102 in Math: Improved from 80 to 85
+Student 103 in Math: Only one exam, not eligible
+Student 104 in Physics: Improved from 75 to 85
+Result table is ordered by student_id, subject.
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+select distinct student_id, subject, first_score, latest_score from (
+    select *, 
+    first_value(score) over w as first_score,
+    last_value(score) over w as  latest_score
+    from Scores
+    WINDOW w AS (partition by student_id, subject order by exam_date rows between unbounded preceding and unbounded following)
+)T
+where first_score < latest_score
+order by 1, 2;
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+In your query:
+
+```sql
+ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+```
+
+means:
+
+> **For every row, consider all rows in that student's subject partition — from the very first row to the very last row.**
+
+This is especially important because you're using `FIRST_VALUE()` and `LAST_VALUE()`.
+
+### Example
+
+Suppose `Scores` contains:
+
+| student_id | subject | exam_date | score |
+| ---------: | ------- | --------- | ----: |
+|          1 | Math    | Jan 10    |    60 |
+|          1 | Math    | Feb 10    |    70 |
+|          1 | Math    | Mar 10    |    85 |
+|          1 | Math    | Apr 10    |    90 |
+
+Your window is:
+
+```sql
+WINDOW w AS (
+    PARTITION BY student_id, subject
+    ORDER BY exam_date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+)
+```
+
+The partition for student 1 + Math is:
+
+```text
+60 → 70 → 85 → 90
+↑                 ↑
+FIRST             LAST
+```
+
+Therefore:
+
+```sql
+FIRST_VALUE(score) OVER w
+```
+
+returns:
+
+```text
+60
+60
+60
+60
+```
+
+and:
+
+```sql
+LAST_VALUE(score) OVER w
+```
+
+returns:
+
+```text
+90
+90
+90
+90
+```
+
+So the intermediate result is:
+
+| exam_date | score | first_score | latest_score |
+| --------- | ----: | ----------: | -----------: |
+| Jan 10    |    60 |          60 |           90 |
+| Feb 10    |    70 |          60 |           90 |
+| Mar 10    |    85 |          60 |           90 |
+| Apr 10    |    90 |          60 |           90 |
+
+Then your:
+
+```sql
+WHERE first_score < latest_score
+```
+
+becomes:
+
+```text
+60 < 90 → TRUE
+```
+
+and the student/subject is returned.
+
+---
+
+### What each part means
+
+```sql
+ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+```
+
+Break it down:
+
+**`UNBOUNDED PRECEDING`**
+
+means:
+
+> Start from the **first row** in the window.
+
+**`UNBOUNDED FOLLOWING`**
+
+means:
+
+> End at the **last row** in the window.
+
+So:
+
+```text
+UNBOUNDED PRECEDING
+        ↓
+┌─────────────────────────┐
+│ 60 │ 70 │ 85 │ 90       │
+└─────────────────────────┘
+                    ↑
+             UNBOUNDED FOLLOWING
+```
+
+In other words:
+
+```text
+FIRST ROW ─────────────────── LAST ROW
+     ↑                            ↑
+     └──── entire partition ──────┘
+```
+
+### Why is this important for `LAST_VALUE()`?
+
+This is the **key reason** your query explicitly specifies the frame.
+
+If you simply wrote:
+
+```sql
+LAST_VALUE(score) OVER (
+    PARTITION BY student_id, subject
+    ORDER BY exam_date
+)
+```
+
+depending on MySQL's default window frame, `LAST_VALUE()` can return the **current row's score**, rather than the final score of the student's subject history.
+
+For example, you could effectively get:
+
+| score | `LAST_VALUE()` |
+| ----: | -------------: |
+|    60 |             60 |
+|    70 |             70 |
+|    85 |             85 |
+|    90 |             90 |
+
+But you want:
+
+| score | `LAST_VALUE()` |
+| ----: | -------------: |
+|    60 |         **90** |
+|    70 |         **90** |
+|    85 |         **90** |
+|    90 |         **90** |
+
+That's why:
+
+```sql
+ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+```
+
+is used.
+
+### Simple interview definition
+
+> **`ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` defines the window frame as all rows from the first row to the last row of the partition. It is particularly useful with `LAST_VALUE()` when we need the actual final value rather than the value of the current row.**
+
+Your complete logic is therefore:
+
+```text
+PARTITION BY student_id, subject
+             ↓
+Group each student's exams for each subject
+
+ORDER BY exam_date
+             ↓
+Put exams in chronological order
+
+UNBOUNDED PRECEDING → UNBOUNDED FOLLOWING
+             ↓
+Consider the complete history
+
+FIRST_VALUE(score)
+             ↓
+Earliest exam score
+
+LAST_VALUE(score)
+             ↓
+Latest exam score
+
+first_score < latest_score
+             ↓
+Student improved
+```
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+WITH win AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY student_id, subject
+            ORDER BY exam_date ASC
+        ) AS rnk_asc,
+        ROW_NUMBER() OVER (
+            PARTITION BY student_id, subject
+            ORDER BY exam_date DESC
+        ) AS rnk_desc
+    FROM scores
+),
+
+first_score AS (
+    SELECT
+        student_id,
+        subject,
+        score AS first_score
+    FROM win
+    WHERE rnk_asc = 1
+),
+
+latest_score AS (
+    SELECT
+        student_id,
+        subject,
+        score AS latest_score
+    FROM win
+    WHERE rnk_desc = 1
+)
+
+SELECT
+    f.student_id,
+    f.subject,
+    f.first_score,
+    l.latest_score
+FROM first_score f
+JOIN latest_score l
+    ON f.student_id = l.student_id
+    AND f.subject = l.subject
+WHERE f.first_score < l.latest_score
+ORDER BY f.student_id, f.subject;
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# Write your MySQL query statement below
+WITH ranked_scores AS (
+  SELECT 
+    student_id,
+    subject,
+    score,
+    exam_date,
+    ROW_NUMBER() OVER (PARTITION BY student_id, subject ORDER BY exam_date ASC) AS rn_first,
+    ROW_NUMBER() OVER (PARTITION BY student_id, subject ORDER BY exam_date DESC) AS rn_last
+  FROM Scores
+)
+
+SELECT 
+  s1.student_id,
+  s1.subject,
+  s1.score AS first_score,
+  s2.score AS latest_score
+FROM ranked_scores s1
+JOIN ranked_scores s2 
+  ON s1.student_id = s2.student_id 
+  AND s1.subject = s2.subject
+WHERE s1.rn_first = 1
+  AND s2.rn_last = 1
+  AND s2.score > s1.score
+ORDER BY s1.student_id, s1.subject;
